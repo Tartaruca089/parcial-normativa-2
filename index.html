@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simulador RAAC 2do Parcial</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Práctica de preguntas multiple choice de Normativa Aeronáutica (RAAC 43, 45, 65, 91, 119, 121, 135 y 145).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: una sola columna centrada (máx. 720px), como una hoja de examen; la matrícula "LV-" marca el progreso. */
+:root {
+  --bg: #eef1f5;
+  --paper: #ffffff;
+  --ink: #142033;
+  --muted: #586579;
+  --line: #d5dbe4;
+  --accent: #1d4f91;
+  --accent-ink: #ffffff;
+  --accent-soft: #e2eaf6;
+  --ok: #1d7a46;
+  --ok-soft: #e1f3e8;
+  --bad: #b3261e;
+  --bad-soft: #fbe4e2;
+  --warn: #8a5a00;
+  --warn-soft: #fbefd5;
+  --font-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1520; --paper: #162131; --ink: #e6ebf2; --muted: #9aa7b9; --line: #2a3a50;
+    --accent: #7fb0f0; --accent-ink: #0e1520; --accent-soft: #1c3150;
+    --ok: #5fcf8f; --ok-soft: #133224; --bad: #ff8a80; --bad-soft: #3a1a1a;
+    --warn: #f0c060; --warn-soft: #3a2e12; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1520; --paper: #162131; --ink: #e6ebf2; --muted: #9aa7b9; --line: #2a3a50;
+  --accent: #7fb0f0; --accent-ink: #0e1520; --accent-soft: #1c3150;
+  --ok: #5fcf8f; --ok-soft: #133224; --bad: #ff8a80; --bad-soft: #3a1a1a;
+  --warn: #f0c060; --warn-soft: #3a2e12; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 16px/1.55 var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 48px;
+}
+[hidden] { display: none !important; }
+.wrap { max-width: 720px; margin: 0 auto; display: grid; gap: 20px; }
+h1, h2 { font-family: var(--font-display); font-weight: 700; letter-spacing: .01em; text-wrap: balance; margin: 0; line-height: 1.05; }
+h1 { font-size: clamp(2.2rem, 7vw, 3.2rem); }
+h2 { font-size: 1.9rem; }
+p { margin: 0; }
+.eyebrow { font: 600 .78rem/1 var(--font-body); text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+.muted { color: var(--muted); }
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; display: grid; gap: 18px; min-width: 0; }
+
+/* Matrícula */
+.plate { display: inline-flex; align-items: center; gap: 0; font: 700 1.05rem/1 var(--font-display); letter-spacing: .08em;
+  border: 2px solid var(--ink); border-radius: 4px; padding: .3em .55em; font-variant-numeric: tabular-nums; }
+.plate b { color: var(--accent); }
+
+/* Inicio */
+.hero { display: grid; gap: 12px; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: .95rem; color: var(--muted); }
+.facts strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 10px; min-width: 0; }
+legend { font-weight: 600; margin-bottom: 10px; padding: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { position: relative; }
+.chip input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.chip span { display: inline-block; padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper);
+  font-size: .95rem; cursor: pointer; user-select: none; font-variant-numeric: tabular-nums; }
+.chip input:checked + span { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.chip input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
+.custom { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: .95rem; }
+.custom input { width: 6em; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); font: inherit; }
+.temas .chip span { font-size: .88rem; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.hint { font-size: .85rem; color: var(--muted); }
+kbd { font: 500 .8em var(--font-mono); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 1px 6px; background: var(--bg); color: var(--ink); }
+
+/* Botones */
+button { font: inherit; cursor: pointer; }
+.btn { border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); padding: 11px 20px; border-radius: 8px; font-weight: 600; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.ghost { background: transparent; color: var(--accent); }
+.btn.link { background: none; border: 0; color: var(--muted); padding: 6px 4px; font-weight: 500; text-decoration: underline; text-underline-offset: 3px; }
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* Quiz */
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.score { font: 500 .9rem var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.score .ok { color: var(--ok); } .score .bad { color: var(--bad); }
+.bar { height: 6px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s ease; }
+.qtext { font-size: 1.2rem; font-weight: 600; line-height: 1.4; }
+.opts { display: grid; gap: 10px; }
+.opt { display: grid; grid-template-columns: 2em 1fr; gap: 10px; align-items: start; text-align: left; width: 100%;
+  background: var(--paper); color: var(--ink); border: 2px solid var(--line); border-radius: var(--radius); padding: 12px 14px; line-height: 1.45; }
+.opt .letter { font: 700 1.05rem/1.4 var(--font-display); text-transform: uppercase; display: inline-grid; place-items: center;
+  width: 1.7em; height: 1.7em; border-radius: 6px; background: var(--bg); color: var(--ink); }
+.opt:hover:not(:disabled) { border-color: var(--accent); }
+.opt.sel { border-color: var(--accent); background: var(--accent-soft); }
+.opt.sel .letter { background: var(--accent); color: var(--accent-ink); }
+.opt:disabled { cursor: default; }
+.opt.correct { border-color: var(--ok); background: var(--ok-soft); }
+.opt.correct .letter { background: var(--ok); color: var(--paper); }
+.opt.wrong { border-color: var(--bad); background: var(--bad-soft); }
+.opt.wrong .letter { background: var(--bad); color: var(--paper); }
+.opt.dim { opacity: .6; }
+.feedback { border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 6px; border-left: 5px solid; }
+.feedback.ok { background: var(--ok-soft); border-color: var(--ok); }
+.feedback.bad { background: var(--bad-soft); border-color: var(--bad); }
+.feedback strong { font: 700 1.35rem/1 var(--font-display); letter-spacing: .02em; }
+.feedback.ok strong { color: var(--ok); } .feedback.bad strong { color: var(--bad); }
+.note { font-size: .92rem; }
+.badge { display: inline-block; font: 600 .72rem/1 var(--font-body); text-transform: uppercase; letter-spacing: .08em;
+  padding: 4px 8px; border-radius: 4px; background: var(--warn-soft); color: var(--warn); }
+.actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+/* Resultado */
+.verdict { display: grid; gap: 10px; justify-items: start; }
+.stamp { font: 700 clamp(2.2rem, 9vw, 3.4rem)/1 var(--font-display); letter-spacing: .04em; text-transform: uppercase;
+  border: 4px solid currentColor; border-radius: 8px; padding: .12em .4em; transform: rotate(-2deg); }
+.stamp.ok { color: var(--ok); } .stamp.bad { color: var(--bad); }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.stat { border: 1px solid var(--line); border-radius: 8px; padding: 12px; display: grid; gap: 2px; }
+.stat b { font: 700 1.9rem/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.stat span { font-size: .85rem; color: var(--muted); }
+.review { display: grid; gap: 12px; }
+.review-item { border-top: 1px solid var(--line); padding-top: 12px; display: grid; gap: 6px; font-size: .95rem; min-width: 0; }
+.review-item .q { font-weight: 600; }
+.review-item .mine { color: var(--bad); }
+.review-item .good { color: var(--ok); }
+@media (max-width: 480px) {
+  .card { padding: 18px; }
+  .qtext { font-size: 1.08rem; }
+  .stats { grid-template-columns: 1fr 1fr 1fr; }
+  .stat b { font-size: 1.5rem; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <!-- INICIO -->
+  <section id="inicio" class="wrap" aria-labelledby="t-inicio">
+    <header class="hero">
+      <span class="plate">LV-<b>RAAC</b></span>
+      <h1 id="t-inicio">Normativa Aeronáutica · 2do Parcial</h1>
+      <p class="muted">Practicá las preguntas modelo. Las preguntas y las opciones salen mezcladas cada vez. Se aprueba con 60% o más.</p>
+      <div class="facts">
+        <span><strong id="f-total">0</strong> preguntas</span>
+        <span><strong id="f-temas">0</strong> temas</span>
+        <span>Partes 43 · 45 · 65 · 91 · 119 · 121 · 135 · 145</span>
+      </div>
+    </header>
+
+    <form id="form-inicio" class="card">
+      <fieldset>
+        <legend>¿Cuántas preguntas?</legend>
+        <div class="chips" id="cantidades"></div>
+        <label class="custom" for="cant-custom">o elegí un número:
+          <input type="number" id="cant-custom" min="1" inputmode="numeric" placeholder="ej. 15">
+        </label>
+      </fieldset>
+      <fieldset class="temas">
+        <legend>Temas</legend>
+        <div class="chips" id="temas"></div>
+        <div class="row"><button type="button" class="btn link" id="temas-todos">Marcar todos</button><button type="button" class="btn link" id="temas-ninguno">Desmarcar todos</button></div>
+      </fieldset>
+      <div class="row">
+        <button type="submit" class="btn" id="btn-empezar">Empezar</button>
+        <span class="hint" id="resumen-inicio"></span>
+      </div>
+      <p class="hint">Atajos: <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> (o <kbd>A</kbd> <kbd>B</kbd> <kbd>C</kbd>, o las flechas) para elegir, <kbd>Enter</kbd> para responder y <kbd>Enter</kbd> otra vez para pasar a la siguiente.</p>
+    </form>
+  </section>
+
+  <!-- QUIZ -->
+  <section id="quiz" class="wrap" hidden aria-live="polite">
+    <div class="topbar">
+      <span class="plate" id="q-plate">LV-<b>01</b>/20</span>
+      <span class="score" id="q-score"></span>
+    </div>
+    <div class="bar" aria-hidden="true"><i id="q-bar"></i></div>
+    <article class="card">
+      <div class="row" style="justify-content:space-between">
+        <span class="eyebrow" id="q-tema"></span>
+        <span class="badge" id="q-badge" hidden title="Esta respuesta no estaba marcada (o estaba en conflicto) en el material y se completó buscando en la norma.">Respuesta investigada</span>
+      </div>
+      <p class="qtext" id="q-texto"></p>
+      <div class="opts" id="q-opts" role="radiogroup" aria-labelledby="q-texto"></div>
+      <div id="q-feedback" class="feedback" hidden></div>
+      <div class="actions">
+        <button type="button" class="btn link" id="btn-salir">Terminar ahora</button>
+        <button type="button" class="btn" id="btn-accion" disabled>Responder</button>
+      </div>
+    </article>
+  </section>
+
+  <!-- RESULTADO -->
+  <section id="resultado" class="wrap" hidden aria-labelledby="t-res">
+    <article class="card">
+      <div class="verdict">
+        <span class="eyebrow" id="t-res">Resultado</span>
+        <span class="stamp" id="r-stamp">Aprobado</span>
+        <p id="r-frase"></p>
+      </div>
+      <div class="stats">
+        <div class="stat"><b id="r-pct">0%</b><span>nota</span></div>
+        <div class="stat"><b id="r-ok">0</b><span>correctas</span></div>
+        <div class="stat"><b id="r-bad">0</b><span>incorrectas</span></div>
+      </div>
+      <div class="row">
+        <button type="button" class="btn" id="btn-repetir">Practicar de nuevo</button>
+        <button type="button" class="btn ghost" id="btn-falladas">Repasar solo las incorrectas</button>
+        <button type="button" class="btn ghost" id="btn-config">Cambiar cantidad o temas</button>
+      </div>
+    </article>
+    <article class="card" id="r-review-card">
+      <h2>Para repasar</h2>
+      <div class="review" id="r-review"></div>
+    </article>
+  </section>
+
+</main>
+
+<script src="preguntas.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var LETRAS = ["a", "b", "c", "d", "e"];
+  var APROBACION = 60; // porcentaje mínimo para aprobar
+  var BANCO = (typeof PREGUNTAS !== "undefined") ? PREGUNTAS : [];
+
+  // ---------- utilidades ----------
+  function mezclar(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+  function guardar(k, v) { try { localStorage.setItem("raac-quiz-" + k, JSON.stringify(v)); } catch (e) {} }
+  function leer(k, def) { try { var v = localStorage.getItem("raac-quiz-" + k); return v ? JSON.parse(v) : def; } catch (e) { return def; } }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function mostrar(id) {
+    ["inicio", "quiz", "resultado"].forEach(function (s) { $(s).hidden = (s !== id); });
+    window.scrollTo(0, 0);
+  }
+
+  // Prepara una pregunta: mezcla sus opciones (las que dicen "anteriores" quedan al final)
+  function preparar(p) {
+    var idx = p.opciones.map(function (_, i) { return i; });
+    var orden;
+    if (p.fijaUltima) {
+      var ult = idx.pop();
+      orden = mezclar(idx).concat([ult]);
+    } else {
+      orden = mezclar(idx);
+    }
+    return {
+      p: p,
+      opciones: orden.map(function (i) { return p.opciones[i]; }),
+      correcta: orden.indexOf(p.correcta),
+      elegida: null
+    };
+  }
+
+  // ---------- estado ----------
+  var temas = [];
+  BANCO.forEach(function (p) { if (temas.indexOf(p.tema) === -1) temas.push(p.tema); });
+  var config = leer("config", { cantidad: "todas", temas: temas.slice() });
+  var ronda = [];       // preguntas preparadas
+  var actual = 0;
+  var seleccion = null;
+  var respondida = false;
+  var ultimaFuente = []; // preguntas originales de la última ronda (para "practicar de nuevo")
+
+  // ---------- inicio ----------
+  $("f-total").textContent = BANCO.length;
+  $("f-temas").textContent = temas.length;
+
+  var opcionesCantidad = [10, 20, 30, "todas"];
+  opcionesCantidad.forEach(function (c) {
+    var lab = el("label", "chip");
+    var inp = el("input"); inp.type = "radio"; inp.name = "cantidad"; inp.value = String(c); inp.id = "cant-" + c;
+    if (String(config.cantidad) === String(c)) inp.checked = true;
+    var sp = el("span", null, c === "todas" ? "Todas" : String(c));
+    lab.appendChild(inp); lab.appendChild(sp); $("cantidades").appendChild(lab);
+    inp.addEventListener("change", function () { $("cant-custom").value = ""; actualizarResumen(); });
+  });
+  if (opcionesCantidad.map(String).indexOf(String(config.cantidad)) === -1) $("cant-custom").value = config.cantidad;
+  $("cant-custom").addEventListener("input", function () {
+    if (this.value) document.querySelectorAll('input[name="cantidad"]').forEach(function (r) { r.checked = false; });
+    actualizarResumen();
+  });
+
+  temas.forEach(function (t, i) {
+    var lab = el("label", "chip");
+    var inp = el("input"); inp.type = "checkbox"; inp.value = t; inp.id = "tema-" + i;
+    inp.checked = !config.temas || config.temas.indexOf(t) !== -1;
+    var n = BANCO.filter(function (p) { return p.tema === t; }).length;
+    var nombre = t;
+    lab.appendChild(inp); lab.appendChild(el("span", null, nombre + " · " + n));
+    $("temas").appendChild(lab);
+    inp.addEventListener("change", actualizarResumen);
+  });
+  $("temas-todos").addEventListener("click", function () { document.querySelectorAll("#temas input").forEach(function (c) { c.checked = true; }); actualizarResumen(); });
+  $("temas-ninguno").addEventListener("click", function () { document.querySelectorAll("#temas input").forEach(function (c) { c.checked = false; }); actualizarResumen(); });
+
+  function leerFormulario() {
+    var elegidos = Array.prototype.map.call(document.querySelectorAll("#temas input:checked"), function (c) { return c.value; });
+    var pool = BANCO.filter(function (p) { return elegidos.indexOf(p.tema) !== -1; });
+    var custom = parseInt($("cant-custom").value, 10);
+    var radio = document.querySelector('input[name="cantidad"]:checked');
+    var cantidad = custom > 0 ? custom : (radio ? radio.value : "todas");
+    var n = cantidad === "todas" ? pool.length : Math.min(parseInt(cantidad, 10), pool.length);
+    return { temas: elegidos, pool: pool, cantidad: cantidad, n: n };
+  }
+  function actualizarResumen() {
+    var f = leerFormulario();
+    $("btn-empezar").disabled = f.n === 0;
+    $("resumen-inicio").textContent = f.pool.length === 0 ? "Elegí al menos un tema." :
+      f.n + " de " + f.pool.length + " preguntas disponibles, en orden aleatorio.";
+  }
+  actualizarResumen();
+
+  $("form-inicio").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var f = leerFormulario();
+    if (!f.n) return;
+    guardar("config", { cantidad: f.cantidad, temas: f.temas });
+    empezar(mezclar(f.pool).slice(0, f.n));
+  });
+
+  // ---------- quiz ----------
+  function empezar(preguntas) {
+    ultimaFuente = preguntas.slice();
+    ronda = mezclar(preguntas).map(preparar);
+    actual = 0;
+    mostrar("quiz");
+    pintarPregunta();
+  }
+
+  function pintarPregunta() {
+    var q = ronda[actual];
+    seleccion = null; respondida = false;
+    var total = ronda.length;
+    var pad = String(total).length < 2 ? 2 : String(total).length;
+    var num = String(actual + 1); while (num.length < pad) num = "0" + num;
+    $("q-plate").innerHTML = "LV-<b>" + num + "</b>/" + total;
+    $("q-bar").style.width = (actual / total * 100) + "%";
+    pintarScore();
+    $("q-tema").textContent = q.p.tema;
+    $("q-badge").hidden = true;
+    $("q-texto").textContent = q.p.pregunta;
+    var cont = $("q-opts"); cont.innerHTML = "";
+    q.opciones.forEach(function (txt, i) {
+      var b = el("button", "opt"); b.type = "button"; b.setAttribute("role", "radio"); b.setAttribute("aria-checked", "false");
+      b.appendChild(el("span", "letter", LETRAS[i]));
+      b.appendChild(el("span", null, txt));
+      b.addEventListener("click", function () { elegir(i); });
+      cont.appendChild(b);
+    });
+    $("q-feedback").hidden = true;
+    var acc = $("btn-accion"); acc.textContent = "Responder"; acc.disabled = true;
+  }
+
+  function pintarScore() {
+    var ok = 0, bad = 0;
+    ronda.forEach(function (q) { if (q.elegida != null) { if (q.elegida === q.correcta) ok++; else bad++; } });
+    $("q-score").innerHTML = '<span class="ok">✓ ' + ok + '</span> · <span class="bad">✗ ' + bad + '</span>';
+  }
+
+  function elegir(i) {
+    if (respondida) return;
+    seleccion = i;
+    Array.prototype.forEach.call($("q-opts").children, function (b, j) {
+      b.classList.toggle("sel", j === i);
+      b.setAttribute("aria-checked", j === i ? "true" : "false");
+    });
+    $("btn-accion").disabled = false;
+  }
+
+  function responder() {
+    if (respondida || seleccion == null) return;
+    var q = ronda[actual];
+    q.elegida = seleccion; respondida = true;
+    var bien = seleccion === q.correcta;
+    Array.prototype.forEach.call($("q-opts").children, function (b, j) {
+      b.disabled = true; b.classList.remove("sel");
+      if (j === q.correcta) b.classList.add("correct");
+      else if (j === seleccion) b.classList.add("wrong");
+      else b.classList.add("dim");
+    });
+    var fb = $("q-feedback"); fb.innerHTML = "";
+    fb.className = "feedback " + (bien ? "ok" : "bad");
+    fb.appendChild(el("strong", null, bien ? "Correcta" : "Incorrecta"));
+    if (!bien) fb.appendChild(el("p", null, "La correcta es la " + LETRAS[q.correcta] + "), marcada en verde."));
+    (q.p.notas || []).forEach(function (n) { fb.appendChild(el("p", "note muted", n)); });
+    fb.hidden = false;
+    $("q-badge").hidden = q.p.estado !== "investigada";
+    pintarScore();
+    $("q-bar").style.width = ((actual + 1) / ronda.length * 100) + "%";
+    var acc = $("btn-accion");
+    acc.textContent = actual + 1 < ronda.length ? "Siguiente" : "Ver resultado";
+    acc.disabled = false; acc.focus({ preventScroll: true });
+  }
+
+  function siguiente() {
+    if (actual + 1 < ronda.length) { actual++; pintarPregunta(); window.scrollTo(0, 0); }
+    else terminar();
+  }
+
+  $("btn-accion").addEventListener("click", function () { respondida ? siguiente() : responder(); });
+  $("btn-salir").addEventListener("click", function () {
+    if (ronda.some(function (q) { return q.elegida != null; })) terminar();
+    else mostrar("inicio");
+  });
+
+  document.addEventListener("keydown", function (ev) {
+    if ($("quiz").hidden || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    var k = ev.key.toLowerCase();
+    var n = ronda[actual] ? ronda[actual].opciones.length : 0;
+    if (k === "enter") {
+      ev.preventDefault();
+      if (respondida) siguiente(); else responder();
+      return;
+    }
+    if (respondida) return;
+    var i = "123456789".indexOf(k);
+    if (i === -1) i = LETRAS.indexOf(k);
+    if (i !== -1 && i < n) { ev.preventDefault(); elegir(i); return; }
+    if (k === "arrowdown" || k === "arrowright") { ev.preventDefault(); elegir(seleccion == null ? 0 : (seleccion + 1) % n); }
+    if (k === "arrowup" || k === "arrowleft") { ev.preventDefault(); elegir(seleccion == null ? n - 1 : (seleccion - 1 + n) % n); }
+  });
+
+  // ---------- resultado ----------
+  function terminar() {
+    var hechas = ronda.filter(function (q) { return q.elegida != null; });
+    var ok = hechas.filter(function (q) { return q.elegida === q.correcta; }).length;
+    var total = hechas.length;
+    var pct = total ? Math.round(ok / total * 100) : 0;
+    var aprobo = pct >= APROBACION;
+    $("r-stamp").textContent = aprobo ? "Aprobaste" : "No aprobaste";
+    $("r-stamp").className = "stamp " + (aprobo ? "ok" : "bad");
+    $("r-frase").textContent = "Respondiste bien " + ok + " de " + total + " preguntas" +
+      (total < ronda.length ? " (terminaste antes, quedaron " + (ronda.length - total) + " sin responder)" : "") +
+      ". Para aprobar necesitás " + APROBACION + "% o más.";
+    $("r-pct").textContent = pct + "%";
+    $("r-ok").textContent = ok;
+    $("r-bad").textContent = total - ok;
+
+    var malas = hechas.filter(function (q) { return q.elegida !== q.correcta; });
+    var rev = $("r-review"); rev.innerHTML = "";
+    $("r-review-card").hidden = malas.length === 0;
+    malas.forEach(function (q) {
+      var it = el("div", "review-item");
+      it.appendChild(el("span", "eyebrow", q.p.tema));
+      it.appendChild(el("p", "q", q.p.pregunta));
+      it.appendChild(el("p", "mine", "✗ Tu respuesta: " + q.opciones[q.elegida]));
+      it.appendChild(el("p", "good", "✓ Correcta: " + q.opciones[q.correcta]));
+      rev.appendChild(it);
+    });
+    $("btn-falladas").hidden = malas.length === 0;
+    $("btn-falladas").onclick = function () { empezar(malas.map(function (q) { return q.p; })); };
+    mostrar("resultado");
+  }
+  // "Practicar de nuevo": nueva tanda al azar con la misma cantidad y temas elegidos al inicio
+  $("btn-repetir").addEventListener("click", function () {
+    var f = leerFormulario();
+    if (f.n) empezar(mezclar(f.pool).slice(0, f.n)); else empezar(ultimaFuente);
+  });
+  $("btn-config").addEventListener("click", function () { mostrar("inicio"); actualizarResumen(); });
+
+  if (!BANCO.length) { $("resumen-inicio").textContent = "No se encontró el archivo preguntas.js."; $("btn-empezar").disabled = true; }
+})();
+</script>
+</body>
+</html>
